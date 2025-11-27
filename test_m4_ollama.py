@@ -7,7 +7,7 @@ base_url = os.getenv("LLM_BASE_URL")
 model_name = os.getenv("LLM_MODEL_NAME")
 
 def generate_response(prompt, model=model_name):
-    url = os.getenv("LLM_BASE_URL")
+    url = base_url
     
     data = {
         "model": model,

@@ -22,8 +22,8 @@ tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=Tru
 
 
 # Load LoRA weights
-print("Loading fine-tuned LoRA weights...")
-model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-lora")
+print("Loading IMPROVED fine-tuned LoRA weights...")
+model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-lora-improved")
 
 # Test prompts
 test_prompts = [
@@ -33,12 +33,16 @@ test_prompts = [
 ]
 
 print("\n" + "="*70)
-print("Testing Fine-tuned Model (with increased max tokens)")
+print("Testing IMPROVED Fine-tuned Model (with increased max tokens)")
 print("="*70)
 
-for prompt in test_prompts:
+for i, prompt in enumerate(test_prompts, 1):
     instruction = prompt.split("### Instruction:")[1].split("\n")[0].strip()
-    print(f"\n📝 Prompt: {instruction}")
+    in_training = "✓ In training data" if i <= 2 else "✗ NEW (not in training)"
+    
+    print(f"\n[Test {i}] {instruction}")
+    print(f"        {in_training}")
+    print("-"*70)
     
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     
@@ -46,14 +50,12 @@ for prompt in test_prompts:
         **inputs,
         max_new_tokens=400,
         do_sample=False,
-        temperature=0.7,
+        #temperature=0.7,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id # Stop at proper ending
     )
     
     result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    # Extract only the output part
     output = result.split("### Output:")[-1].strip()
     
-    print(f" Output:\n{output}\n")
-    print("-"*50)
+    print(f"{output}\n")

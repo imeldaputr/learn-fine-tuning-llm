@@ -28,25 +28,27 @@ model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-lora")
 # Test prompts
 test_prompts = [
     "### Instruction: Write a function to calculate factorial\n### Output:",
-    #"### Instruction: Write a function to check palindrome\n### Output:",
-    #"### Instruction: Create a function to find maximum in a list\n### Output:", # New, not in training data
+    "### Instruction: Write a function to check palindrome\n### Output:",
+    "### Instruction: Create a function to find maximum in a list\n### Output:", # New, not in training data
 ]
 
-print("\n" + "="*50)
-print("Testing Fine-tuned Model")
-print("="*50)
+print("\n" + "="*70)
+print("Testing Fine-tuned Model (with increased max tokens)")
+print("="*70)
 
 for prompt in test_prompts:
-    print(f"\n Prompt: {prompt.split('###')[1].strip()}")
+    instruction = prompt.split("### Instruction:")[1].split("\n")[0].strip()
+    print(f"\n📝 Prompt: {instruction}")
     
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     
     outputs = model.generate(
         **inputs,
-        max_new_tokens=150,
+        max_new_tokens=400,
         do_sample=False,
         temperature=0.7,
-        pad_token_id=tokenizer.eos_token_id
+        pad_token_id=tokenizer.eos_token_id,
+        eos_token_id=tokenizer.eos_token_id # Stop at proper ending
     )
     
     result = tokenizer.decode(outputs[0], skip_special_tokens=True)

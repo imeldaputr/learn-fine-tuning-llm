@@ -51,3 +51,5 @@
 ## Note/Observation
 The fine-tuned model gives a more complete and useful answer (includes tests and broader explanation), but the formatting is messy and the explanation gets cut off.
 The original model is cleaner and simpler, but less informative.
+
+Maybe we need to increase the maximum token?

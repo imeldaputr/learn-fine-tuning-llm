@@ -1,9 +1,9 @@
 from dotenv import load_dotenv
 import os
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from datasets import load_dataset
-from trl import SFTTrainer
+from datasets import Dataset
+#from trl import SFTTrainer
 import torch
 
 load_dotenv()
@@ -40,6 +40,16 @@ data = {
 
 dataset = Dataset.from_dict(data)
 
+# Tokenize Dataset
+def tokenize_function(examples):
+    return tokenizer(
+        examples["text"],
+        padding="max_length",
+        truncation=True,
+        max_length=512,
+    )
+
+tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=["text"])
 
 # LoRA config
 lora_config = LoraConfig(
@@ -63,19 +73,35 @@ training_args = TrainingArguments(
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4, 
     learning_rate=2e-4, 
-    logging_steps=10, # Log every 10 steps
+    logging_steps=1, # Log every 10 steps
     save_strategy="epoch",
-    fp16==True, # Use mixed precision
+    fp16=True, # Use mixed precision
+    remove_unused_columns=False,
 )
 
-# Trainer
-trainer = SFTTrainer(
-    model=model,
-    train_dataset=dataset,
-    args=training_args,
-    dataset_text_field="text",
+# # Trainer
+# trainer = SFTTrainer(
+#     model=model,
+#     train_dataset=dataset,
+#     args=training_args,
+#     formatting_func=lambda x: x["text"],
+#     tokenizer=tokenizer,
+#     max_seq_length=512
+# )
+
+# Data collator
+data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
-    max_seq_length=512,
+    mlm=False # Causal LM, not masked LM
+)
+
+# Standard Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_dataset,
+    data_collator=data_collator,
+    #tokenizer=tokenizer
 )
 
 print("Starting training...")
@@ -84,4 +110,5 @@ trainer.train()
 
 # Save the fine-tuned model
 trainer.save_model("./qwen-finetuned-lora")
+tokenizer.save_pretrained("./qwen-finetuned-lora")
 print("Training complete~~ Model saved to ./qwen-finetuned-lora")

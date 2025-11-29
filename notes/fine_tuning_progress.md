@@ -266,3 +266,37 @@ Sample:
 | **Improved** | 8 examples | 0.73 | Better | ⚠️ Hallucination issues |
 | **Real Dataset** | 100 examples | 0.77 | Best | ✅ **Production-ready** |
 
+
+
+## Fourth Training
+Now with improved training dataset - including utils for cleaning and data formatting
+
+### Configs
+   LoRA rank: 32 (2x dari sebelumnya)
+   Trainable params: 8.7M (0.56%) - DOUBLED capacity
+   Epochs: 5
+   Time: 5 min 34 sec
+   Dataset: 100 examples with ### END markers
+
+### Loss Progession
+   Start: 1.19
+   End: 0.51
+   Reduction: **57%** (best so far!)
+   Average: 0.72
+
+### Comparison with Previous (rank 16, 3 epochs):
+| Model | Start Loss | Best Loss | Avg Loss | Trainable Params |
+|-------|------------|-----------|----------|------------------|
+| Real Dataset (rank 16) | 1.15 | 0.77 | 0.90 | 4.3M (0.28%) |
+| **Improved (rank 32)** | **1.19** | **0.51** | **0.72** | **8.7M (0.56%)** |
+
+### Improvements
+   ✅ 34% lower final loss (0.77 → 0.51)
+   ✅ 20% lower average loss (0.90 → 0.72)
+   ✅ Smooth descent, no spikes
+   ✅ Gradient norms stable (0.81 → 0.59)
+
+### Expected improvements:
+1. Better stopping (trained with END markers)
+2. Less hallucination (stronger training signal)
+3. Cleaner output (2x model capacity)

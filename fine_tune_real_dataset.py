@@ -23,36 +23,11 @@ tokenizer.padding_size = "right"
 
 # Load dataset
 print("Loading CodeAlpaca dataset...")
-dataset = load_from_disk("./code_alpaca_100")
+dataset = load_from_disk("./code_alpaca_100_improved")
 
-# Format dataset for training
-def format_instruction(example):
-    instruction = example.get('instruction', '')
-    input_text = example.get('input', '')
-    output = example.get('output', '')
-    
-    if input_text:
-        text = f"""### Instruction: {instruction}
-### Input: {input_text}
-### Output:
-``````python
-{output}
-``````"""
-    else:
-        text = f"""### Instruction: {instruction}
-### Output:
-``````python
-{output}
-``````"""
-
-    return {"text": text}
-
-# Apply formatting
-dataset = dataset.map(format_instruction, remove_columns=dataset.column_names)
-
-print(f"Formatted {len(dataset)} examples")
-print("\nSample formatted example:")
-print(dataset[0]['text'][:300] + "...") # Print first 300 chars
+print(f"Loaded {len(dataset)} examples")
+print("\nSample:")
+print(dataset[0]['text'][:300] + "...")
 
 
 # Tokenization
@@ -64,8 +39,8 @@ tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=
 
 # LoRA config
 lora_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
+    r=32,
+    lora_alpha=64,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
     lora_dropout=0.05,
     bias="none",
@@ -80,7 +55,7 @@ model.print_trainable_parameters()
 # Training arguments
 training_args = TrainingArguments(
     output_dir="./results_real_dataset",
-    num_train_epochs=3,
+    num_train_epochs=5,
     per_device_train_batch_size=2,  # Increased batch size
     gradient_accumulation_steps=4,
     learning_rate=2e-4,
@@ -102,14 +77,18 @@ trainer = Trainer(
 )
 
 print("\n" + "="*70)
-print("Starting training with REAL dataset (100 examples)")
+print("Starting training with IMPROVED dataset")
 print("="*70)
-print(f"Expected time: ~5-10 minutes on M4 Pro")
+print(f"- Dataset: 100 examples (with END markers)")
+print(f"- LoRA rank: 32 (up from 16)")
+print(f"- Epochs: 5 (up from 3)")
+print(f"- Expected time: ~6-8 minutes")
 print("="*70 + "\n")
+
 
 trainer.train()
 
-trainer.save_model("./qwen-finetuned-real-dataset")
-tokenizer.save_pretrained("./qwen-finetuned-real-dataset")
-print("\n✅ Training complete~~ Model saved to ./qwen-finetuned-real-dataset")
+trainer.save_model("./qwen-finetuned-improved-dataset")
+tokenizer.save_pretrained("./qwen-finetuned-improved-dataset")
+print("\n✅ Training complete~~ Model saved to ./qwen-finetuned-improved-dataset")
 

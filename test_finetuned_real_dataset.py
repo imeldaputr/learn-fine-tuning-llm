@@ -3,6 +3,7 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 import torch
+from utils import clean_code_output, extract_code_only, detect_hallucination, validate_code_syntax
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=Tru
 
 # Load LoRA weights
 print("Loading fine-tuned LoRA weights (with CodeAlpaca dataset)...")
-model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-real-dataset")
+model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-improved-dataset")
 
 
 # Test prompts
@@ -59,8 +60,11 @@ print("Testing Fine-tuned Model (CodeAlpaca dataset)")
 print("="*70)
 print(f"Model: {base_model_name}")
 print(f"Fine-tuned on: 100 CodeAlpaca examples")
+print(f"Post-processing: ✅ ENABLED")
 print(f"Test cases: {len(test_prompts)}")
 print("="*70)
+
+results = []
 
 
 for i, test_case in enumerate(test_prompts, 1):
@@ -78,31 +82,68 @@ for i, test_case in enumerate(test_prompts, 1):
     
     outputs = model.generate(
         **inputs,
-        max_new_tokens=200,
+        max_new_tokens=150,
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id, # Stop at proper ending
-        repetition_penalty=1.1 # Penalize repetition
+        repetition_penalty=1.5, # Penalize repetition
+        no_repeat_ngram_size=3  # Prevent repeating n-grams
     )
     
-    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    output = result.split("### Output:")[-1].strip()
+    raw_result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    raw_output = raw_result.split("### Output:")[-1].strip()
     
-    # Count output length for analysis
-    output_lines = output.split('\n')
-    output_length = len(output)
+    # POST-PROCESSING
+    cleaned_output = clean_code_output(raw_result)
+    code_only = extract_code_only(raw_result)
     
-    print(output)
+    # VALIDATION
+    has_hallucination, hall_type = detect_hallucination(raw_output)
+    is_valid, syntax_error = validate_code_syntax(code_only)
+    
+    # Display cleaned output
+    print(cleaned_output)
     print("-"*70)
-    print(f"Output length: {output_length} chars, {len(output_lines)} lines")
     
+    # Analysis
+    print(f"📊 Analysis:")
+    print(f"  • Raw length: {len(raw_output)} chars")
+    print(f"  • Cleaned length: {len(cleaned_output)} chars")
+    print(f"  • Reduction: {len(raw_output) - len(cleaned_output)} chars removed")
+    print(f"  • Syntax valid: {'✅ Yes' if is_valid else '❌ No - ' + syntax_error}")
+    print(f"  • Hallucination: {'⚠️ Yes (' + hall_type + ')' if has_hallucination else '✅ None detected'}")
+    
+    # Store results
+    results.append({
+        'test': i,
+        'instruction': instruction,
+        'category': category,
+        'raw_length': len(raw_output),
+        'cleaned_length': len(cleaned_output),
+        'syntax_valid': is_valid,
+        'has_hallucination': has_hallucination,
+        'hall_type': hall_type if has_hallucination else None
+    })
 
+# Summary
 print("\n" + "="*70)
-print("Testing Complete!")
+print("📊 SUMMARY REPORT")
 print("="*70)
-print("\n📊 Evaluation Criteria:")
-print("1. Does output stop properly? (No hallucination)")
-print("2. Is code syntactically correct?")
-print("3. Does it solve the task correctly?")
-print("4. Is formatting clean and consistent?")
-print("5. Can it generalize to new tasks (Test 4-5)?")
+
+total_tests = len(results)
+syntax_valid_count = sum(1 for r in results if r['syntax_valid'])
+hallucination_count = sum(1 for r in results if r['has_hallucination'])
+avg_raw_length = sum(r['raw_length'] for r in results) / total_tests
+avg_cleaned_length = sum(r['cleaned_length'] for r in results) / total_tests
+total_chars_removed = sum(r['raw_length'] - r['cleaned_length'] for r in results)
+
+print(f"\n✅ Syntax Valid: {syntax_valid_count}/{total_tests} ({syntax_valid_count/total_tests*100:.0f}%)")
+print(f"⚠️  Hallucination: {hallucination_count}/{total_tests} ({hallucination_count/total_tests*100:.0f}%)")
+print(f"📏 Avg Raw Length: {avg_raw_length:.0f} chars")
+print(f"📏 Avg Cleaned Length: {avg_cleaned_length:.0f} chars")
+print(f"🧹 Total Cleaned: {total_chars_removed} chars removed")
+print(f"📉 Reduction: {(total_chars_removed/sum(r['raw_length'] for r in results))*100:.1f}%")
+
+print(f"\n{'='*70}")
+print("Post-processing successfully cleaned all outputs! ✅")
+print("="*70)

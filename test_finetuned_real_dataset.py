@@ -23,7 +23,7 @@ tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=Tru
 
 # Load LoRA weights
 print("Loading fine-tuned LoRA weights (with CodeAlpaca dataset)...")
-model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-improved-dataset")
+model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-real-dataset")
 
 
 # Test prompts

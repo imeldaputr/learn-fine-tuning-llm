@@ -39,7 +39,7 @@ tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=
 
 # LoRA config
 lora_config = LoraConfig(
-    r=32,
+    r=16,
     lora_alpha=64,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
     lora_dropout=0.05,
@@ -55,7 +55,7 @@ model.print_trainable_parameters()
 # Training arguments
 training_args = TrainingArguments(
     output_dir="./results_real_dataset",
-    num_train_epochs=5,
+    num_train_epochs=3,
     per_device_train_batch_size=2,  # Increased batch size
     gradient_accumulation_steps=4,
     learning_rate=2e-4,
@@ -77,18 +77,17 @@ trainer = Trainer(
 )
 
 print("\n" + "="*70)
-print("Starting training with IMPROVED dataset")
+print("Starting training with real dataset")
 print("="*70)
 print(f"- Dataset: 100 examples (with END markers)")
-print(f"- LoRA rank: 32 (up from 16)")
-print(f"- Epochs: 5 (up from 3)")
-print(f"- Expected time: ~6-8 minutes")
+print(f"- LoRA rank: 16")
+print(f"- Epochs: 3")
 print("="*70 + "\n")
 
 
 trainer.train()
 
-trainer.save_model("./qwen-finetuned-improved-dataset")
-tokenizer.save_pretrained("./qwen-finetuned-improved-dataset")
-print("\n✅ Training complete~~ Model saved to ./qwen-finetuned-improved-dataset")
+trainer.save_model("./qwen-finetuned-real-dataset")
+tokenizer.save_pretrained("./qwen-finetuned-real-dataset")
+print("\n✅ Training complete~~ Model saved to ./qwen-finetuned-real-dataset")
 

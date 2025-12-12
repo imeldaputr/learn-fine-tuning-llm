@@ -27,32 +27,40 @@ model = PeftModel.from_pretrained(base_model, "./qwen-finetuned-real-dataset")
 
 
 # Test prompts
+# test_prompts = [
+#     {
+#         "prompt": "### Instruction: Write a function to calculate factorial\n### Output:",
+#         "in_training": "Likely ✓",
+#         "category": "Recursion"
+#     },
+#     {
+#         "prompt": "### Instruction: Write a function to check palindrome\n### Output:",
+#         "in_training": "Likely ✓",
+#         "category": "String Manipulation"
+#     },
+#     {
+#         "prompt": "### Instruction: Create a function to find maximum in a list\n### Output:",
+#         "in_training": "Maybe ✓",
+#         "category": "List Operations"
+#     },
+#     {
+#         "prompt": "### Instruction: Write a function to calculate the sum of even numbers in a list\n### Output:",
+#         "in_training": "New ✗",
+#         "category": "List + Conditionals"
+#     },
+#     {
+#         "prompt": "### Instruction: Create a function to merge two sorted lists\n### Output:",
+#         "in_training": "New ✗",
+#         "category": "Advanced Algorithm"
+#     },
+# ]
+
 test_prompts = [
     {
-        "prompt": "### Instruction: Write a function to calculate factorial\n### Output:",
+        "prompt": "### Instruction: write code to count fibonacci in rust\n### Output:",
         "in_training": "Likely ✓",
         "category": "Recursion"
-    },
-    {
-        "prompt": "### Instruction: Write a function to check palindrome\n### Output:",
-        "in_training": "Likely ✓",
-        "category": "String Manipulation"
-    },
-    {
-        "prompt": "### Instruction: Create a function to find maximum in a list\n### Output:",
-        "in_training": "Maybe ✓",
-        "category": "List Operations"
-    },
-    {
-        "prompt": "### Instruction: Write a function to calculate the sum of even numbers in a list\n### Output:",
-        "in_training": "New ✗",
-        "category": "List + Conditionals"
-    },
-    {
-        "prompt": "### Instruction: Create a function to merge two sorted lists\n### Output:",
-        "in_training": "New ✗",
-        "category": "Advanced Algorithm"
-    },
+    }
 ]
 
 print("\n" + "="*70)
@@ -82,7 +90,7 @@ for i, test_case in enumerate(test_prompts, 1):
     
     outputs = model.generate(
         **inputs,
-        max_new_tokens=150,
+        max_new_tokens=1500,
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id, # Stop at proper ending
